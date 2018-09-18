@@ -17,14 +17,6 @@ HOURLY_RESULTS = []  # Mbps
 LAST_DAY = -1
 
 
-def set_email_subject():
-    global EMAIL_SUBJECT
-    aws_availability_zone = '[%s]' % Popen('ec2-metadata -z | sed \'s/.*\\: //\'', shell=True, stdout=PIPE).communicate()[0].decode('utf-8')
-
-    if aws_availability_zone != '[]':
-        EMAIL_SUBJECT = '%s %s' % (aws_availability_zone, EMAIL_SUBJECT)
-
-
 def send_email_notif(data, sender, recipients):
     try:
         response = SES.send_email(
@@ -51,7 +43,7 @@ def send_email_notif(data, sender, recipients):
 
 def upload_results(data):
     filename = str(datetime.now()) + '.json'
-    o = S3.Object('perf-var', filename)
+    o = S3.Object('perfvar', filename)
     o.put(Body=json.dumps(data))
 
 
@@ -103,7 +95,7 @@ def turnover_iperf(server_ip, duration, interval, num_streams, sender, recipient
 
 
 def main():
-    global LAST_DAY, HOURLY_RESULTS
+    global LAST_DAY, HOURLY_RESULTS, EMAIL_SUBJECT
     parser = argparse.ArgumentParser(description="Network performance benchmark")
     parser.add_argument("--server", action="store_true", dest="is_server",
                         help="Run as server")
@@ -119,6 +111,9 @@ def main():
     parser.add_argument("-n", "--num-streams", metavar="", dest="num_streams", type=int,
                         action="store", default=defaults.num_streams,
                         help="Parallel streams")
+    parser.add_argument("--region", metavar="", dest="region",
+                        action="store", default=defaults.region,
+                        help="Region")
     parser.add_argument("--email-sender", metavar="", dest="email_sender",
                         action="store", default=defaults.email_sender,
                         help="E-mail sender")
@@ -129,7 +124,7 @@ def main():
     args = parser.parse_args()
     email_recipients = args.email_recipients.split(',')
     LAST_DAY = datetime.now().day
-    set_email_subject()
+    EMAIL_SUBJECT = '[%s] %s' % (args.region, EMAIL_SUBJECT)
 
     if not args.is_server:
         while True:
