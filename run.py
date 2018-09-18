@@ -69,6 +69,7 @@ def run_iperf(server_ip, duration, interval, num_streams, sender, recipients):
     except Exception as e:
         data = {'Error': e}
         send_email_notif(data, sender, recipients)
+        exit(1)
 
 
 def generate_metrics():
