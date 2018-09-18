@@ -19,7 +19,7 @@ LAST_DAY = -1
 
 def set_email_subject():
     global EMAIL_SUBJECT
-    aws_availability_zone = '[%s]' % Popen(['ec2-metadata', '-z'], stdout=PIPE, stderr=PIPE).communicate()[0].decode('utf-8')
+    aws_availability_zone = '[%s]' % Popen('ec2-metadata -z | sed \'s/.*\\: //\'', shell=True, stdout=PIPE).communicate()[0].decode('utf-8')
 
     if aws_availability_zone != '[]':
         EMAIL_SUBJECT = '%s %s' % (aws_availability_zone, EMAIL_SUBJECT)
