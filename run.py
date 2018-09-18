@@ -128,6 +128,7 @@ def main():
     args = parser.parse_args()
     email_recipients = args.email_recipients.split(',')
     LAST_DAY = datetime.now().day
+    set_email_subject()
 
     if not args.is_server:
         while True:
