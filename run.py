@@ -1,12 +1,13 @@
 #!/usr/bin/python
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from subprocess import Popen, PIPE
 import argparse
 import boto3
 import conf.defaults as defaults
 import json
 import numpy as np
+import time
 
 
 S3 = boto3.resource('s3')
@@ -108,6 +109,10 @@ def main():
     parser.add_argument("-i", "--interval", metavar="", dest="interval", type=int,
                         action="store", default=defaults.interval,
                         help="Report interval")
+    parser.add_argument("-s", "--sleep", metavar="", dest="sleep",
+                        default=defaults.sleep,
+                        type=int, action="store",
+                        help="Time to sleep between iperf bursts")
     parser.add_argument("-n", "--num-streams", metavar="", dest="num_streams", type=int,
                         action="store", default=defaults.num_streams,
                         help="Parallel streams")
@@ -123,12 +128,21 @@ def main():
 
     args = parser.parse_args()
     email_recipients = args.email_recipients.split(',')
-    LAST_DAY = datetime.now().day
+    sleep_until = datetime.now()
+    LAST_DAY = sleep_until.day
     EMAIL_SUBJECT = '[%s] %s' % (args.region, EMAIL_SUBJECT)
 
     if not args.is_server:
         while True:
+            if args.sleep > 0:
+                sleep_until = sleep_until + timedelta(seconds=args.sleep)
+
             turnover_iperf(args.server_ip, args.duration, args.interval, args.num_streams, args.email_sender, email_recipients)
+
+            if args.sleep > 0:
+                while datetime.now() < sleep_until:
+                    time.sleep(0.2)
+
     else:
         while True:
             cmd_res = Popen(['iperf3', '-s'], stdout=PIPE, stderr=PIPE).communicate()[0]
